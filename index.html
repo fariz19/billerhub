@@ -1,97 +1,173 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>BillerHub</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BillerHub</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      background: #e8f5e9;
-      margin: 0;
-      padding: 20px;
-    }
-
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      max-width: 400px;
-      margin: auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    h2 {
-      text-align: center;
-      color: #2e7d32;
-    }
-
-    input, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-
-    button {
-      background: #2e7d32;
-      color: white;
-      border: none;
-      font-weight: bold;
-    }
-
-    #menu {
-      display: none;
-      text-align: center;
-    }
-  </style>
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#e8f5e9;
+}
+.header{
+  background:#1fa855;
+  color:white;
+  text-align:center;
+  padding:15px;
+  font-size:22px;
+  font-weight:bold;
+}
+.container{
+  max-width:400px;
+  margin:20px auto;
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 3px 8px rgba(0,0,0,0.1);
+}
+input{
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  font-size:16px;
+}
+button{
+  width:100%;
+  padding:12px;
+  margin-top:12px;
+  border:none;
+  border-radius:6px;
+  background:#1fa855;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+button:hover{
+  background:#148f43;
+}
+.card{
+  background:#f9f9f9;
+  padding:10px;
+  margin-top:8px;
+  border-radius:6px;
+}
+.hidden{
+  display:none;
+}
+</style>
 </head>
-
 <body>
 
-<div class="card" id="loginBox">
-  <h2>🟢 BillerHub</h2>
-  <input id="user" placeholder="User">
-  <input id="pass" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
+<div class="header">BillerHub</div>
+
+<!-- LOGIN -->
+<div class="container" id="loginBox">
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="login()">Masuk</button>
+  <div id="errorMsg" style="color:red;margin-top:10px;"></div>
 </div>
 
-<div class="card" id="menu">
-  <h2>Menu</h2>
-  <button onclick="loadData('datung')">DATUNG</button>
-  <button onclick="loadData('rbm')">RUTE BACA METER</button>
-  <div id="hasil"></div>
+<!-- MENU PILIH SHEET -->
+<div class="container hidden" id="menuBox">
+  <button onclick="loadData('getDatung')">📊 DATUNG</button>
+  <button onclick="loadData('getRBM')">🚶 RUTE BACA METER</button>
+  <button onclick="logout()">Keluar</button>
+</div>
+
+<!-- DATA LIST -->
+<div class="container hidden" id="dataBox">
+  <input type="text" id="searchInput" placeholder="Cari..." onkeyup="searchData()">
+  <div id="dataList"></div>
+  <button onclick="backMenu()">Kembali</button>
 </div>
 
 <script>
+// ================= CONFIG =================
 const API_URL = "https://script.google.com/macros/s/AKfycbzVa_sqHjtNHmb7MAyYeZlSMtxtWd95MXS-QUsfG6Ud8fbqJuc3C9jEJZ-RlxWUFFHc/exec";
+let currentUser="";
+let currentData=[];
 
-async function login() {
-  const user = document.getElementById("user").value;
-  const pass = document.getElementById("pass").value;
+// ================= LOGIN =================
+async function login(){
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
 
-  const res = await fetch(API_URL + "?action=login&user=" + user + "&pass=" + pass);
+  const res = await fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"login",
+      username:username,
+      password:password
+    })
+  });
+
   const data = await res.json();
-
-  if (data.success) {
-    localStorage.setItem("user", user);
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("menu").style.display = "block";
-  } else {
-    alert("Login gagal");
+  if(data.status==="success"){
+    currentUser = data.USER;
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("menuBox").classList.remove("hidden");
+  }else{
+    document.getElementById("errorMsg").innerText = "Username/password salah";
   }
 }
 
-async function loadData(type) {
-  const user = localStorage.getItem("user");
-  const res = await fetch(API_URL + "?action=getData&type=" + type + "&user=" + user);
-  const data = await res.json();
+// ================= LOAD DATA =================
+async function loadData(action){
+  const res = await fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:action,
+      USER:currentUser
+    })
+  });
 
-  document.getElementById("hasil").innerHTML =
-    "<pre>" + JSON.stringify(data.data, null, 2) + "</pre>";
+  const data = await res.json();
+  currentData = data.data;
+  renderData(currentData);
+
+  document.getElementById("menuBox").classList.add("hidden");
+  document.getElementById("dataBox").classList.remove("hidden");
+}
+
+// ================= RENDER DATA =================
+function renderData(list){
+  const container = document.getElementById("dataList");
+  container.innerHTML="";
+  list.forEach(item=>{
+    let card = '<div class="card">';
+    for(let key in item){
+      card += `<b>${key}</b>: ${item[key]}<br>`;
+    }
+    card += '</div>';
+    container.innerHTML += card;
+  });
+}
+
+// ================= SEARCH =================
+function searchData(){
+  const keyword = document.getElementById("searchInput").value.toLowerCase();
+  const filtered = currentData.filter(obj=>{
+    return Object.values(obj).some(val=>String(val).toLowerCase().includes(keyword));
+  });
+  renderData(filtered);
+}
+
+// ================= NAV =================
+function backMenu(){
+  document.getElementById("dataBox").classList.add("hidden");
+  document.getElementById("menuBox").classList.remove("hidden");
+}
+
+function logout(){
+  currentUser="";
+  document.getElementById("menuBox").classList.add("hidden");
+  document.getElementById("dataBox").classList.add("hidden");
+  document.getElementById("loginBox").classList.remove("hidden");
 }
 </script>
 
