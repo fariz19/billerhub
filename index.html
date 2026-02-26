@@ -19,8 +19,6 @@ button:hover{background:#148f43;}
 .summary{margin-top:10px;padding:10px;background:#f1f8f2;border-radius:8px;font-size:14px;}
 .filter-box{margin-top:10px;margin-bottom:10px;}
 select, .radio-group{width:100%;padding:8px;margin-top:5px;border-radius:6px;border:1px solid #ccc;font-size:14px;}
-.checkbox-group{margin-top:5px;margin-bottom:10px;}
-.checkbox-group label{display:block;font-size:14px;}
 </style>
 </head>
 <body>
@@ -52,10 +50,10 @@ select, .radio-group{width:100%;padding:8px;margin-top:5px;border-radius:6px;bor
       <input type="radio" name="sortDir" value="asc" checked> A→Z
       <input type="radio" name="sortDir" value="desc"> Z→A
     </div>
-    <!-- Filter multi-select untuk LEMBAR, TARIF, DAYA, RBM -->
-    <div class="checkbox-group" id="multiFilterBox"></div>
+    <!-- Filter dropdown multi-select -->
+    <div id="multiFilterBox"></div>
   </div>
-  <input type="text" id="searchInput" placeholder="Cari..." onkeyup="searchData()">
+  <input type="text" id="searchInput" placeholder="Cari..." onkeyup="applyFilter()">
   <div id="loading" class="hidden">Loading...</div>
   <div id="dataList"></div>
 </div>
@@ -78,7 +76,6 @@ async function login(){
     if(data.status==="success"){
       currentUser=data.USER;
       document.getElementById("loginBox").classList.add("hidden");
-      // summary beranda
       document.getElementById("summaryBox").innerHTML=`
         TOTAL PELANGGAN RBM : ${data.total_pelanggan_RBM}<br>
         Total tagihan + admin : ${data.total_tagihan}<br>
@@ -97,17 +94,11 @@ async function login(){
             if(item.RBM) rbmCounts[item.RBM]=(rbmCounts[item.RBM]||0)+1;
           });
           let pivotHtml="<b>Jumlah per RBM:</b><br>";
-          for(let rbm in rbmCounts){
-            pivotHtml+=`${rbm} : ${rbmCounts[rbm]}<br>`;
-          }
+          for(let rbm in rbmCounts){ pivotHtml+=`${rbm} : ${rbmCounts[rbm]}<br>`;}
           document.getElementById("pivotBox").innerHTML=pivotHtml;
         });
-    } else {
-      document.getElementById("errorMsg").innerText="Username/password salah";
-    }
-  }catch(err){
-    document.getElementById("errorMsg").innerText="Gagal koneksi ke server";
-  }
+    } else {document.getElementById("errorMsg").innerText="Username/password salah";}
+  }catch(err){document.getElementById("errorMsg").innerText="Gagal koneksi ke server";}
 }
 
 async function loadData(action){
@@ -123,27 +114,26 @@ async function loadData(action){
     const data=await res.json();
     currentData=data.data;
     if(currentData.length>0){
-      // isi filter dropdown
       Object.keys(currentData[0]).forEach(k=>{
         const opt=document.createElement("option"); opt.value=k; opt.text=k; document.getElementById("filterColumn").appendChild(opt);
       });
-      // isi multi filter khusus
+      // dropdown multi-select
       multiFilterCols.forEach(col=>{
         if(currentData[0][col]!==undefined){
           let values=[...new Set(currentData.map(d=>d[col]))];
-          let html=`<b>Filter ${col}:</b><br>`;
-          html+=`<label><input type="checkbox" value="" checked onchange="applyFilter()"> Semua</label>`;
-          values.forEach(v=>{
-            html+=`<label><input type="checkbox" value="${v}" checked onchange="applyFilter()"> ${v}</label>`;
-          });
-          document.getElementById("multiFilterBox").innerHTML+=html;
+          let sel=document.createElement("select");
+          sel.setAttribute("multiple","multiple");
+          sel.setAttribute("data-col",col);
+          sel.style.width="100%"; sel.style.marginTop="5px"; sel.onchange=applyFilter;
+          let optAll=document.createElement("option"); optAll.value=""; optAll.text="Semua"; optAll.selected=true; sel.appendChild(optAll);
+          values.forEach(v=>{ let o=document.createElement("option"); o.value=v; o.text=v; o.selected=true; sel.appendChild(o); });
+          let label=document.createElement("label"); label.innerText=`Filter ${col}:`; document.getElementById("multiFilterBox").appendChild(label);
+          document.getElementById("multiFilterBox").appendChild(sel);
         }
       });
     }
     applyFilter();
-  } catch(err){
-    document.getElementById("dataList").innerText="Gagal ambil data";
-  }
+  } catch(err){document.getElementById("dataList").innerText="Gagal ambil data";}
   document.getElementById("loading").classList.add("hidden");
 }
 
@@ -175,11 +165,13 @@ function applyFilter(){
     if(a[col]>b[col]) return dir==="asc"?1:-1;
     return 0;
   });
-  // multi filter
+  // multi-filter dropdown
   multiFilterCols.forEach(col=>{
-    const checkboxes=document.querySelectorAll(`#multiFilterBox input[type=checkbox][value]`);
-    let checkedVals=[...checkboxes].filter(c=>c.checked && c.value!=="" && c.parentNode.innerText.includes(col)).map(c=>c.value);
-    if(checkedVals.length>0) list=list.filter(d=>checkedVals.includes(d[col]));
+    const sel=document.querySelector(`#multiFilterBox select[data-col="${col}"]`);
+    if(sel){
+      const selected=[...sel.selectedOptions].map(o=>o.value).filter(v=>v!=="");
+      if(selected.length>0) list=list.filter(d=>selected.includes(String(d[col])));
+    }
   });
   // search
   const keyword=document.getElementById("searchInput").value.toLowerCase();
@@ -187,7 +179,6 @@ function applyFilter(){
   renderData(list);
 }
 
-function searchData(){applyFilter();}
 function backMenu(){document.getElementById("dataBox").classList.add("hidden");document.getElementById("menuBox").classList.remove("hidden");}
 function logout(){currentUser="";document.getElementById("menuBox").classList.add("hidden");document.getElementById("dataBox").classList.add("hidden");document.getElementById("loginBox").classList.remove("hidden");}
 </script>
