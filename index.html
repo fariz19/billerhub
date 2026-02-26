@@ -22,7 +22,6 @@ button:hover{background:#148f43;}
 
 <div class="header">BillerHub</div>
 
-<!-- LOGIN -->
 <div class="container" id="loginBox">
   <input type="text" id="username" placeholder="Username">
   <input type="password" id="password" placeholder="Password">
@@ -30,14 +29,12 @@ button:hover{background:#148f43;}
   <div id="errorMsg" style="color:red;margin-top:10px;"></div>
 </div>
 
-<!-- MENU -->
 <div class="container hidden" id="menuBox">
   <button onclick="loadData('getDatung')">📊 DATUNG</button>
   <button onclick="loadData('getRBM')">🚶 RUTE BACA METER</button>
   <button onclick="logout()">Keluar</button>
 </div>
 
-<!-- DATA -->
 <div class="container hidden" id="dataBox">
   <input type="text" id="searchInput" placeholder="Cari..." onkeyup="searchData()">
   <div id="loading" class="hidden">Loading...</div>
@@ -46,40 +43,37 @@ button:hover{background:#148f43;}
 </div>
 
 <script>
-const API_URL="https://script.google.com/macros/s/AKfycbz-nrmSQaz1qEmUxCWUojBP_k1xOZ68mlsB8E95GSpYOhKjIPaAvt4ywDdQUtAawwQc/exec";
+const API_URL="https://script.google.com/macros/s/AKfycbws_6VcnkBx9ond5kUbL2QYf8ihj3MpHt-9LhKLCDfUC7DASiae3kqkw9-3aXtZxkni/exec";
 let currentUser="";
 let currentData=[];
 
-// LOGIN
 async function login(){
   const username=document.getElementById("username").value;
   const password=document.getElementById("password").value;
   if(!username||!password){document.getElementById("errorMsg").innerText="Isi username & password";return;}
   document.getElementById("errorMsg").innerText="";
-  const res=await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"login",username,password})
-  });
-  const data=await res.json();
-  if(data.status==="success"){currentUser=data.USER;document.getElementById("loginBox").classList.add("hidden");document.getElementById("menuBox").classList.remove("hidden");}
-  else{document.getElementById("errorMsg").innerText="Username/password salah";}
+  try{
+    const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"login",username,password})});
+    const data=await res.json();
+    if(data.status==="success"){currentUser=data.USER;document.getElementById("loginBox").classList.add("hidden");document.getElementById("menuBox").classList.remove("hidden");}
+    else{document.getElementById("errorMsg").innerText="Username/password salah";}
+  } catch(err){document.getElementById("errorMsg").innerText="Gagal koneksi ke server";}
 }
 
-// LOAD DATA
 async function loadData(action){
   document.getElementById("menuBox").classList.add("hidden");
   document.getElementById("dataBox").classList.remove("hidden");
   document.getElementById("loading").classList.remove("hidden");
   document.getElementById("dataList").innerHTML="";
-
-  const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action,USER:currentUser})});
-  const data=await res.json();
-  currentData=data.data;
-  renderData(currentData);
+  try{
+    const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action,USER:currentUser})});
+    const data=await res.json();
+    currentData=data.data;
+    renderData(currentData);
+  } catch(err){document.getElementById("dataList").innerText="Gagal ambil data";}
   document.getElementById("loading").classList.add("hidden");
 }
 
-// RENDER DATA
 function renderData(list){
   const container=document.getElementById("dataList");
   container.innerHTML="";
@@ -92,19 +86,17 @@ function renderData(list){
         <div class="row"><span>RBM</span><b>${item.RBM||"-"}</b></div>
         <div class="row"><span>LGK</span><b>${item.LGK||"-"}</b></div>
         <div class="row"><span>LEMBAR</span><b>${item.LEMBAR||"-"}</b></div>
-        <div class="row"><span>Status</span><b style="color:red">${item.VERIFIKASI||"-"}</b></div>
+        ${item.VERIFIKASI?`<div class="row"><span>Status</span><b style="color:red">${item.VERIFIKASI}</b></div>`:""}
       </div>`;
   });
 }
 
-// SEARCH
 function searchData(){
   const keyword=document.getElementById("searchInput").value.toLowerCase();
   const filtered=currentData.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(keyword)));
   renderData(filtered);
 }
 
-// NAV
 function backMenu(){document.getElementById("dataBox").classList.add("hidden");document.getElementById("menuBox").classList.remove("hidden");}
 function logout(){currentUser="";document.getElementById("menuBox").classList.add("hidden");document.getElementById("dataBox").classList.add("hidden");document.getElementById("loginBox").classList.remove("hidden");}
 </script>
