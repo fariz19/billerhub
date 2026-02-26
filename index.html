@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>BillerHub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #e8f5e9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #2e7d32;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      background: #2e7d32;
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+
+    #menu {
+      display: none;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card" id="loginBox">
+  <h2>🟢 BillerHub</h2>
+  <input id="user" placeholder="User">
+  <input id="pass" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+</div>
+
+<div class="card" id="menu">
+  <h2>Menu</h2>
+  <button onclick="loadData('datung')">DATUNG</button>
+  <button onclick="loadData('rbm')">RUTE BACA METER</button>
+  <div id="hasil"></div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbzVa_sqHjtNHmb7MAyYeZlSMtxtWd95MXS-QUsfG6Ud8fbqJuc3C9jEJZ-RlxWUFFHc/exec";
+
+async function login() {
+  const user = document.getElementById("user").value;
+  const pass = document.getElementById("pass").value;
+
+  const res = await fetch(API_URL + "?action=login&user=" + user + "&pass=" + pass);
+  const data = await res.json();
+
+  if (data.success) {
+    localStorage.setItem("user", user);
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("menu").style.display = "block";
+  } else {
+    alert("Login gagal");
+  }
+}
+
+async function loadData(type) {
+  const user = localStorage.getItem("user");
+  const res = await fetch(API_URL + "?action=getData&type=" + type + "&user=" + user);
+  const data = await res.json();
+
+  document.getElementById("hasil").innerHTML =
+    "<pre>" + JSON.stringify(data.data, null, 2) + "</pre>";
+}
+</script>
+
+</body>
+</html>
