@@ -43,7 +43,7 @@ button:hover{background:#148f43;}
 </div>
 
 <script>
-const API_URL="https://script.google.com/macros/s/AKfycbws_6VcnkBx9ond5kUbL2QYf8ihj3MpHt-9LhKLCDfUC7DASiae3kqkw9-3aXtZxkni/exec";
+const API_URL="https://script.google.com/macros/s/AKfycbz1EXxsewRa_3ggY4pA30rNBe5qNSqNZYyQFrnQgIoEpU6WXYTntxXWMG4XAnRrpKrF/exec"; // ganti dengan URL Apps Script
 let currentUser="";
 let currentData=[];
 
@@ -53,11 +53,21 @@ async function login(){
   if(!username||!password){document.getElementById("errorMsg").innerText="Isi username & password";return;}
   document.getElementById("errorMsg").innerText="";
   try{
-    const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"login",username,password})});
+    const res=await fetch(API_URL,{
+      method:"POST",
+      body:JSON.stringify({action:"login",username,password})
+    });
     const data=await res.json();
-    if(data.status==="success"){currentUser=data.USER;document.getElementById("loginBox").classList.add("hidden");document.getElementById("menuBox").classList.remove("hidden");}
-    else{document.getElementById("errorMsg").innerText="Username/password salah";}
-  } catch(err){document.getElementById("errorMsg").innerText="Gagal koneksi ke server";}
+    if(data.status==="success"){
+      currentUser=data.USER;
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("menuBox").classList.remove("hidden");
+    } else {
+      document.getElementById("errorMsg").innerText="Username/password salah";
+    }
+  }catch(err){
+    document.getElementById("errorMsg").innerText="Gagal koneksi ke server";
+  }
 }
 
 async function loadData(action){
@@ -70,7 +80,9 @@ async function loadData(action){
     const data=await res.json();
     currentData=data.data;
     renderData(currentData);
-  } catch(err){document.getElementById("dataList").innerText="Gagal ambil data";}
+  } catch(err){
+    document.getElementById("dataList").innerText="Gagal ambil data";
+  }
   document.getElementById("loading").classList.add("hidden");
 }
 
