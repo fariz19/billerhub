@@ -6,58 +6,17 @@
 <title>BillerHub</title>
 
 <style>
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#e8f5e9;
-}
-.header{
-  background:#1fa855;
-  color:white;
-  text-align:center;
-  padding:15px;
-  font-size:22px;
-  font-weight:bold;
-}
-.container{
-  max-width:400px;
-  margin:20px auto;
-  background:white;
-  padding:20px;
-  border-radius:10px;
-  box-shadow:0 3px 8px rgba(0,0,0,0.1);
-}
-input{
-  width:100%;
-  padding:10px;
-  margin-top:10px;
-  border-radius:6px;
-  border:1px solid #ccc;
-  font-size:16px;
-}
-button{
-  width:100%;
-  padding:12px;
-  margin-top:12px;
-  border:none;
-  border-radius:6px;
-  background:#1fa855;
-  color:white;
-  font-size:16px;
-  cursor:pointer;
-}
-button:hover{
-  background:#148f43;
-}
-.card{
-  background:#f9f9f9;
-  padding:10px;
-  margin-top:8px;
-  border-radius:6px;
-}
-.hidden{
-  display:none;
-}
+body{margin:0;font-family:Arial,sans-serif;background:#e8f5e9;}
+.header{background:#1fa855;color:white;text-align:center;padding:15px;font-size:22px;font-weight:bold;}
+.container{max-width:400px;margin:20px auto;background:white;padding:20px;border-radius:10px;box-shadow:0 3px 8px rgba(0,0,0,0.1);}
+input, select{width:100%;padding:10px;margin-top:10px;border-radius:6px;border:1px solid #ccc;font-size:16px;}
+button{width:100%;padding:12px;margin-top:12px;border:none;border-radius:6px;background:#1fa855;color:white;font-size:16px;cursor:pointer;}
+button:hover{background:#148f43;}
+.hidden{display:none;}
+.modern-card{background:white;padding:15px;margin-top:12px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.08);border-left:5px solid #1fa855;}
+.modern-card .title{font-weight:bold;font-size:16px;margin-bottom:8px;color:#1fa855;}
+.row{display:flex;justify-content:space-between;font-size:14px;margin-top:4px;}
+#loading{text-align:center;margin:10px 0;}
 </style>
 </head>
 <body>
@@ -72,103 +31,99 @@ button:hover{
   <div id="errorMsg" style="color:red;margin-top:10px;"></div>
 </div>
 
-<!-- MENU PILIH SHEET -->
+<!-- MENU -->
 <div class="container hidden" id="menuBox">
   <button onclick="loadData('getDatung')">📊 DATUNG</button>
   <button onclick="loadData('getRBM')">🚶 RUTE BACA METER</button>
   <button onclick="logout()">Keluar</button>
 </div>
 
-<!-- DATA LIST -->
+<!-- DATA -->
 <div class="container hidden" id="dataBox">
   <input type="text" id="searchInput" placeholder="Cari..." onkeyup="searchData()">
+  <div id="loading" class="hidden">Loading...</div>
   <div id="dataList"></div>
   <button onclick="backMenu()">Kembali</button>
 </div>
 
 <script>
-// ================= CONFIG =================
-const API_URL = "https://script.google.com/macros/s/AKfycbwa1nfbM8pRymtLkTd4IKoGgjd8guw_SsMPnQNeoPy1rfEdb0TIMGc_6Jv8pnLSL5-I/exec";
+const API_URL="https://script.google.com/macros/s/AKfycbzof7ZD49JxAMIXlfIxMJkv8zoiG1SKiXhPRPLmRP5b9cIMHemX8gJhsFLJj24r9KN4/exec";
 let currentUser="";
 let currentData=[];
 
-// ================= LOGIN =================
+// LOGIN
 async function login(){
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
-
-  const res = await fetch(API_URL,{
+  const username=document.getElementById("username").value;
+  const password=document.getElementById("password").value;
+  if(!username||!password){document.getElementById("errorMsg").innerText="Isi username & password";return;}
+  document.getElementById("errorMsg").innerText="";
+  const res=await fetch(API_URL,{
     method:"POST",
-    body:JSON.stringify({
-      action:"login",
-      username:username,
-      password:password
-    })
+    body:JSON.stringify({action:"login",username,password})
   });
-
-  const data = await res.json();
-  if(data.status==="success"){
-    currentUser = data.USER;
-    document.getElementById("loginBox").classList.add("hidden");
-    document.getElementById("menuBox").classList.remove("hidden");
-  }else{
-    document.getElementById("errorMsg").innerText = "Username/password salah";
-  }
+  const data=await res.json();
+  if(data.status==="success"){currentUser=data.USER;document.getElementById("loginBox").classList.add("hidden");document.getElementById("menuBox").classList.remove("hidden");}
+  else{document.getElementById("errorMsg").innerText="Username/password salah";}
 }
 
-// ================= LOAD DATA =================
+// LOAD DATA
 async function loadData(action){
-  const res = await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:action,
-      USER:currentUser
-    })
-  });
-
-  const data = await res.json();
-  currentData = data.data;
-  renderData(currentData);
-
   document.getElementById("menuBox").classList.add("hidden");
   document.getElementById("dataBox").classList.remove("hidden");
+  document.getElementById("loading").classList.remove("hidden");
+  document.getElementById("dataList").innerHTML="";
+
+  const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action,USER:currentUser})});
+  const data=await res.json();
+  currentData=data.data;
+
+  // ================= FILTER & SORT =================
+  if(action=="getDatung"){
+    currentData=currentData
+      .filter(d=>d.VERIFIKASI=="BELUM LUNAS")
+      .sort((a,b)=>{
+        // RBM A-Z
+        if(a.RBM<b.RBM) return -1;
+        if(a.RBM>b.RBM) return 1;
+        // LGK kecil → besar
+        if(a.LGK-b.LGK!==0) return a.LGK-b.LGK;
+        // LEMBAR besar → kecil
+        return b.LEMBAR-a.LEMBAR;
+      });
+  }
+
+  renderData(currentData);
+  document.getElementById("loading").classList.add("hidden");
 }
 
-// ================= RENDER DATA =================
+// RENDER DATA
 function renderData(list){
-  const container = document.getElementById("dataList");
+  const container=document.getElementById("dataList");
   container.innerHTML="";
+  if(list.length===0){container.innerHTML="<div>Tidak ada data</div>";return;}
   list.forEach(item=>{
-    let card = '<div class="card">';
-    for(let key in item){
-      card += `<b>${key}</b>: ${item[key]}<br>`;
-    }
-    card += '</div>';
-    container.innerHTML += card;
+    container.innerHTML+=`
+      <div class="modern-card">
+        <div class="title">${item.NAMA_PLG||item.NAMA||"-"}</div>
+        <div class="row"><span>IDPEL</span><b>${item.IDPEL||"-"}</b></div>
+        <div class="row"><span>RBM</span><b>${item.RBM||"-"}</b></div>
+        <div class="row"><span>LGK</span><b>${item.LGK||"-"}</b></div>
+        <div class="row"><span>LEMBAR</span><b>${item.LEMBAR||"-"}</b></div>
+        <div class="row"><span>Status</span><b style="color:red">${item.VERIFIKASI||"-"}</b></div>
+      </div>`;
   });
 }
 
-// ================= SEARCH =================
+// SEARCH
 function searchData(){
-  const keyword = document.getElementById("searchInput").value.toLowerCase();
-  const filtered = currentData.filter(obj=>{
-    return Object.values(obj).some(val=>String(val).toLowerCase().includes(keyword));
-  });
+  const keyword=document.getElementById("searchInput").value.toLowerCase();
+  const filtered=currentData.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(keyword)));
   renderData(filtered);
 }
 
-// ================= NAV =================
-function backMenu(){
-  document.getElementById("dataBox").classList.add("hidden");
-  document.getElementById("menuBox").classList.remove("hidden");
-}
-
-function logout(){
-  currentUser="";
-  document.getElementById("menuBox").classList.add("hidden");
-  document.getElementById("dataBox").classList.add("hidden");
-  document.getElementById("loginBox").classList.remove("hidden");
-}
+// NAV
+function backMenu(){document.getElementById("dataBox").classList.add("hidden");document.getElementById("menuBox").classList.remove("hidden");}
+function logout(){currentUser="";document.getElementById("menuBox").classList.add("hidden");document.getElementById("dataBox").classList.add("hidden");document.getElementById("loginBox").classList.remove("hidden");}
 </script>
 
 </body>
