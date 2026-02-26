@@ -16,6 +16,7 @@ button:hover{background:#148f43;}
 .modern-card .title{font-weight:bold;font-size:16px;margin-bottom:8px;color:#1fa855;}
 .row{display:flex;justify-content:space-between;font-size:14px;margin-top:4px;}
 #loading{text-align:center;margin:10px 0;}
+.summary{margin-top:10px;padding:10px;background:#f1f8f2;border-radius:8px;font-size:14px;}
 </style>
 </head>
 <body>
@@ -30,6 +31,7 @@ button:hover{background:#148f43;}
 </div>
 
 <div class="container hidden" id="menuBox">
+  <div id="summaryBox" class="summary"></div>
   <button onclick="loadData('getDatung')">📊 DATUNG</button>
   <button onclick="loadData('getRBM')">🚶 RUTE BACA METER</button>
   <button onclick="logout()">Keluar</button>
@@ -43,7 +45,7 @@ button:hover{background:#148f43;}
 </div>
 
 <script>
-const API_URL="https://script.google.com/macros/s/AKfycbzbw8D4bZ7xECcsP9dKN6QM_gMUPBmT4xux-fckzbJ7N4nukxkIcMT8oO-tvC3S_qhY/exec"; // ganti dengan URL Web App
+const API_URL="https://script.google.com/macros/s/AKfycbwWHXOBS8gXsJWOWzoP9wW6YAuhVE298WSZjKo-lJnkh9BEwBeAjnwVXUGp-j8Ko32l/exec"; // ganti dengan URL Apps Script
 let currentUser="";
 let currentData=[];
 
@@ -61,6 +63,15 @@ async function login(){
     if(data.status==="success"){
       currentUser=data.USER;
       document.getElementById("loginBox").classList.add("hidden");
+
+      // tampilkan summary di beranda
+      document.getElementById("summaryBox").innerHTML=`
+        TOTAL PELANGGAN RBM : ${data.total_pelanggan_RBM}<br>
+        Total tagihan + admin : ${data.total_tagihan}<br>
+        Total plg 1 lembar : ${data.total_lembar_1}<br>
+        Total plg 2 lembar : ${data.total_lembar_2}<br>
+        Total plg 3 lembar : ${data.total_lembar_3}
+      `;
       document.getElementById("menuBox").classList.remove("hidden");
     } else {
       document.getElementById("errorMsg").innerText="Username/password salah";
@@ -93,11 +104,12 @@ function renderData(list){
   list.forEach(item=>{
     container.innerHTML+=`
       <div class="modern-card">
-        <div class="title">${item.NAMA_PLG||item.NAMA||"-"}</div>
+        <div class="title">${item["NAMA PLG"]||item.NAMA||"-"}</div>
         <div class="row"><span>IDPEL</span><b>${item.IDPEL||"-"}</b></div>
         <div class="row"><span>RBM</span><b>${item.RBM||"-"}</b></div>
         <div class="row"><span>LGK</span><b>${item.LGK||"-"}</b></div>
         <div class="row"><span>LEMBAR</span><b>${item.LEMBAR||"-"}</b></div>
+        <div class="row"><span>RPTAGIHAN</span><b>${item.RPTAGIHAN||"-"}</b></div>
         ${item.VERIFIKASI?`<div class="row"><span>Status</span><b style="color:red">${item.VERIFIKASI}</b></div>`:""}
       </div>`;
   });
