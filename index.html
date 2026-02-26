@@ -28,7 +28,8 @@ select, .radio-group{width:100%;padding:8px;margin-top:5px;border-radius:6px;bor
 <div class="container" id="loginBox">
   <input type="text" id="username" placeholder="Username">
   <input type="password" id="password" placeholder="Password">
-  <button onclick="login()">Masuk</button>
+  <button id="loginBtn" onclick="login()">Masuk</button>
+  <div id="loginLoading" class="hidden" style="text-align:center;margin-top:10px;">Loading...</div>
   <div id="errorMsg" style="color:red;margin-top:10px;"></div>
 </div>
 
@@ -50,7 +51,6 @@ select, .radio-group{width:100%;padding:8px;margin-top:5px;border-radius:6px;bor
       <input type="radio" name="sortDir" value="asc" checked> A→Z
       <input type="radio" name="sortDir" value="desc"> Z→A
     </div>
-    <!-- Filter dropdown multi-select -->
     <div id="multiFilterBox"></div>
   </div>
   <input type="text" id="searchInput" placeholder="Cari..." onkeyup="applyFilter()">
@@ -63,16 +63,20 @@ const API_URL="https://script.google.com/macros/s/AKfycbyulWFkqSoTsBWF9rtyb26U_H
 let currentUser="";
 let currentData=[];
 let currentAction="";
-let multiFilterCols=["LEMBAR","TARIF","DAYA","RBM"];
+let filterCols=["LEMBAR","TARIF","DAYA","RBM"];
 
 async function login(){
   const username=document.getElementById("username").value;
   const password=document.getElementById("password").value;
   if(!username||!password){document.getElementById("errorMsg").innerText="Isi username & password";return;}
   document.getElementById("errorMsg").innerText="";
+  document.getElementById("loginLoading").classList.remove("hidden");
+  document.getElementById("loginBtn").disabled=true;
   try{
     const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"login",username,password})});
     const data=await res.json();
+    document.getElementById("loginLoading").classList.add("hidden");
+    document.getElementById("loginBtn").disabled=false;
     if(data.status==="success"){
       currentUser=data.USER;
       document.getElementById("loginBox").classList.add("hidden");
@@ -98,7 +102,11 @@ async function login(){
           document.getElementById("pivotBox").innerHTML=pivotHtml;
         });
     } else {document.getElementById("errorMsg").innerText="Username/password salah";}
-  }catch(err){document.getElementById("errorMsg").innerText="Gagal koneksi ke server";}
+  }catch(err){
+    document.getElementById("loginLoading").classList.add("hidden");
+    document.getElementById("loginBtn").disabled=false;
+    document.getElementById("errorMsg").innerText="Gagal koneksi ke server";
+  }
 }
 
 async function loadData(action){
@@ -114,20 +122,20 @@ async function loadData(action){
     const data=await res.json();
     currentData=data.data;
     if(currentData.length>0){
+      // isi dropdown sort
       Object.keys(currentData[0]).forEach(k=>{
         const opt=document.createElement("option"); opt.value=k; opt.text=k; document.getElementById("filterColumn").appendChild(opt);
       });
-      // dropdown multi-select
-      multiFilterCols.forEach(col=>{
+      // isi dropdown filter LEMBAR,TARIF,DAYA,RBM
+      filterCols.forEach(col=>{
         if(currentData[0][col]!==undefined){
-          let values=[...new Set(currentData.map(d=>d[col]))];
-          let sel=document.createElement("select");
-          sel.setAttribute("multiple","multiple");
+          const sel=document.createElement("select");
           sel.setAttribute("data-col",col);
           sel.style.width="100%"; sel.style.marginTop="5px"; sel.onchange=applyFilter;
-          let optAll=document.createElement("option"); optAll.value=""; optAll.text="Semua"; optAll.selected=true; sel.appendChild(optAll);
-          values.forEach(v=>{ let o=document.createElement("option"); o.value=v; o.text=v; o.selected=true; sel.appendChild(o); });
-          let label=document.createElement("label"); label.innerText=`Filter ${col}:`; document.getElementById("multiFilterBox").appendChild(label);
+          const optAll=document.createElement("option"); optAll.value=""; optAll.text="Semua"; sel.appendChild(optAll);
+          const values=[...new Set(currentData.map(d=>d[col]))].sort();
+          values.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.text=v; sel.appendChild(o); });
+          const label=document.createElement("label"); label.innerText=`Filter ${col}:`; document.getElementById("multiFilterBox").appendChild(label);
           document.getElementById("multiFilterBox").appendChild(sel);
         }
       });
@@ -165,12 +173,12 @@ function applyFilter(){
     if(a[col]>b[col]) return dir==="asc"?1:-1;
     return 0;
   });
-  // multi-filter dropdown
-  multiFilterCols.forEach(col=>{
+  // dropdown filter LEMBAR,TARIF,DAYA,RBM
+  filterCols.forEach(col=>{
     const sel=document.querySelector(`#multiFilterBox select[data-col="${col}"]`);
     if(sel){
-      const selected=[...sel.selectedOptions].map(o=>o.value).filter(v=>v!=="");
-      if(selected.length>0) list=list.filter(d=>selected.includes(String(d[col])));
+      const val=sel.value;
+      if(val!=="") list=list.filter(d=>String(d[col])===val);
     }
   });
   // search
