@@ -17,6 +17,8 @@ button:hover{background:#148f43;}
 .row{display:flex;justify-content:space-between;font-size:14px;margin-top:4px;}
 #loading{text-align:center;margin:10px 0;}
 .summary{margin-top:10px;padding:10px;background:#f1f8f2;border-radius:8px;font-size:14px;}
+.filter-box{margin-top:10px;margin-bottom:10px;}
+select, .radio-group{width:100%;padding:8px;margin-top:5px;border-radius:6px;border:1px solid #ccc;font-size:14px;}
 </style>
 </head>
 <body>
@@ -32,22 +34,33 @@ button:hover{background:#148f43;}
 
 <div class="container hidden" id="menuBox">
   <div id="summaryBox" class="summary"></div>
+  <div id="pivotBox" class="summary"></div>
   <button onclick="loadData('getDatung')">📊 DATUNG</button>
   <button onclick="loadData('getRBM')">🚶 RUTE BACA METER</button>
   <button onclick="logout()">Keluar</button>
 </div>
 
 <div class="container hidden" id="dataBox">
+  <button onclick="backMenu()">Kembali</button>
+  <div class="filter-box">
+    <select id="filterColumn" onchange="applyFilter()">
+      <option value="">--Filter kolom--</option>
+    </select>
+    <div class="radio-group">
+      <input type="radio" name="sortDir" value="asc" checked> A→Z
+      <input type="radio" name="sortDir" value="desc"> Z→A
+    </div>
+  </div>
   <input type="text" id="searchInput" placeholder="Cari..." onkeyup="searchData()">
   <div id="loading" class="hidden">Loading...</div>
   <div id="dataList"></div>
-  <button onclick="backMenu()">Kembali</button>
 </div>
 
 <script>
 const API_URL="https://script.google.com/macros/s/AKfycbyulWFkqSoTsBWF9rtyb26U_HYHEweRpnSr1xktxPYovj3Gdu0AxTJFYuUZWvexvdSF/exec"; // ganti dengan URL Apps Script
 let currentUser="";
 let currentData=[];
+let currentAction="";
 
 async function login(){
   const username=document.getElementById("username").value;
@@ -55,16 +68,12 @@ async function login(){
   if(!username||!password){document.getElementById("errorMsg").innerText="Isi username & password";return;}
   document.getElementById("errorMsg").innerText="";
   try{
-    const res=await fetch(API_URL,{
-      method:"POST",
-      body:JSON.stringify({action:"login",username,password})
-    });
+    const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"login",username,password})});
     const data=await res.json();
     if(data.status==="success"){
       currentUser=data.USER;
       document.getElementById("loginBox").classList.add("hidden");
-
-      // tampilkan summary di beranda
+      // summary beranda
       document.getElementById("summaryBox").innerHTML=`
         TOTAL PELANGGAN RBM : ${data.total_pelanggan_RBM}<br>
         Total tagihan + admin : ${data.total_tagihan}<br>
@@ -73,6 +82,21 @@ async function login(){
         Total plg 3 lembar : ${data.total_lembar_3}
       `;
       document.getElementById("menuBox").classList.remove("hidden");
+
+      // pivot RBM
+      fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getDatung",USER:currentUser})})
+        .then(r=>r.json())
+        .then(d=>{
+          const rbmCounts={};
+          d.data.forEach(item=>{
+            if(item.RBM) rbmCounts[item.RBM]=(rbmCounts[item.RBM]||0)+1;
+          });
+          let pivotHtml="<b>Jumlah per RBM:</b><br>";
+          for(let rbm in rbmCounts){
+            pivotHtml+=`${rbm} : ${rbmCounts[rbm]}<br>`;
+          }
+          document.getElementById("pivotBox").innerHTML=pivotHtml;
+        });
     } else {
       document.getElementById("errorMsg").innerText="Username/password salah";
     }
@@ -82,14 +106,22 @@ async function login(){
 }
 
 async function loadData(action){
+  currentAction=action;
   document.getElementById("menuBox").classList.add("hidden");
   document.getElementById("dataBox").classList.remove("hidden");
   document.getElementById("loading").classList.remove("hidden");
   document.getElementById("dataList").innerHTML="";
+  document.getElementById("filterColumn").innerHTML='<option value="">--Filter kolom--</option>';
   try{
     const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action,USER:currentUser})});
     const data=await res.json();
     currentData=data.data;
+    if(currentData.length>0){
+      // isi filter dropdown
+      Object.keys(currentData[0]).forEach(k=>{
+        const opt=document.createElement("option"); opt.value=k; opt.text=k; document.getElementById("filterColumn").appendChild(opt);
+      });
+    }
     renderData(currentData);
   } catch(err){
     document.getElementById("dataList").innerText="Gagal ambil data";
@@ -113,6 +145,18 @@ function renderData(list){
         ${item.VERIFIKASI?`<div class="row"><span>Status</span><b style="color:red">${item.VERIFIKASI}</b></div>`:""}
       </div>`;
   });
+}
+
+function applyFilter(){
+  const col=document.getElementById("filterColumn").value;
+  if(!col) return;
+  const dir=document.querySelector('input[name="sortDir"]:checked').value;
+  const sorted=[...currentData].sort((a,b)=>{
+    if(a[col]<b[col]) return dir==="asc"?-1:1;
+    if(a[col]>b[col]) return dir==="asc"?1:-1;
+    return 0;
+  });
+  renderData(sorted);
 }
 
 function searchData(){
