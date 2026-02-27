@@ -5,76 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BillerHub Pro</title>
     <meta name="theme-color" content="#1fa855">
-    <link rel="manifest" href="manifest.json">
-    
     <style>
         :root { --primary: #1fa855; --bg: #f4f7f6; --text: #333; }
-        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
-        .header { background: var(--primary); color: white; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        button:active { transform: scale(0.98); }
-        button.secondary { background: #666; }
-        
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .summary-item { background: #e8f5e9; padding: 10px; border-radius: 8px; font-size: 13px; border-left: 4px solid var(--primary); }
-        
-        .modern-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 5px solid var(--primary); position: relative; }
-        .modern-card .name { font-weight: bold; font-size: 17px; color: var(--primary); margin-bottom: 10px; display: block; }
-        .data-row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; border-bottom: 1px dashed #eee; }
-        
-        .ket-box { margin-top: 10px; background: #fffde7; padding: 10px; border-radius: 5px; font-style: italic; font-size: 13px; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+        .header { background: var(--primary); color: white; padding: 20px; text-align: center; font-size: 22px; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { max-width: 500px; margin: 0 auto; padding: 15px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button.sec { background: #666; margin-top: 5px; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .sum-item { background: #e8f5e9; padding: 10px; border-radius: 8px; font-size: 12px; border-left: 4px solid var(--primary); }
+        .modern-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 12px; border-left: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .data-row { display: flex; justify-content: space-between; font-size: 14px; padding: 3px 0; border-bottom: 1px dashed #eee; }
+        .ket-box { margin-top: 8px; background: #fffde7; padding: 8px; border-radius: 5px; font-size: 12px; color: #555; border: 1px solid #ffe082; }
         .hidden { display: none; }
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        
-        footer { text-align: center; font-size: 12px; color: #888; margin-top: 40px; padding-bottom: 20px; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; font-weight: bold; color: var(--primary); }
+        footer { text-align: center; font-size: 11px; color: #aaa; margin: 20px 0; }
     </style>
 </head>
 <body>
 
-<div id="loading" class="loading-overlay hidden"><div>Memuat Data...</div></div>
+<div id="loading" class="hidden"><div>⏳ Memuat Data...</div></div>
 <div class="header">BillerHub</div>
 
 <div class="container">
     <div id="loginBox" class="card">
-        <h3 style="text-align:center">Login Petugas</h3>
+        <h3 style="text-align:center; margin-top:0;">Login Petugas</h3>
         <input type="text" id="username" placeholder="Username">
         <input type="password" id="password" placeholder="Password">
-        <button onclick="login()">Masuk</button>
-        <p id="errorMsg" style="color:red; font-size:14px; text-align:center"></p>
+        <button onclick="login()">MASUK</button>
+        <p id="errorMsg" style="color:red; font-size:13px; text-align:center"></p>
     </div>
 
     <div id="menuBox" class="hidden">
         <div class="card">
-            <div id="summaryTitle" style="font-weight:bold; margin-bottom:10px;"></div>
-            <div class="summary-grid" id="summaryStats"></div>
+            <div id="userTitle" style="font-weight:bold; color:var(--primary);"></div>
+            <div class="summary-grid" id="stats"></div>
             <button onclick="loadData('getDatung')">📊 DATUNG</button>
             <button onclick="loadData('getRBM')">🚶 RUTE BACA METER</button>
-            <button class="secondary" onclick="logout()">Keluar Aplikasi</button>
+            <button class="sec" onclick="logout()">KELUAR</button>
         </div>
     </div>
 
     <div id="dataBox" class="hidden">
-        <button class="secondary" onclick="showMenu()">← Kembali</button>
-        <input type="text" id="searchInput" placeholder="Cari Nama/IDPEL..." onkeyup="filterLocal()">
-        <div id="dataList"></div>
+        <button class="sec" onclick="showMenu()">← KEMBALI</button>
+        <input type="text" id="search" placeholder="Cari Nama / IDPEL..." onkeyup="filterLocal()">
+        <div id="list"></div>
     </div>
-
+    
     <footer>&copy; 2026 BillerHub - By Mas Admin</footer>
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzbHJbAHBljSptq-O_zYXnnKFHN732gMf1ATLqgEsmtgtSCkwgcYmDmhHenMCH782LI/exec";
-let allData = [];
-let sessionTimeout = 12 * 60 * 60 * 1000; // 12 Jam
+const API_URL = "https://script.google.com/macros/s/AKfycbzFS6kAZIbATnm1_UA0BV9eGZzu-VwOsp8lNtcISnp7ZeahSrPrmSY85jL16Bh26k3I/exec";
+let currentViewData = [];
 
-// Cek Sesi saat buka aplikasi
 window.onload = () => {
     const session = JSON.parse(localStorage.getItem("biller_session"));
-    if (session && (Date.now() - session.time < sessionTimeout)) {
+    if (session && (Date.now() - session.time < 12 * 60 * 60 * 1000)) {
         showMenu(session.data);
     }
 };
@@ -82,30 +71,29 @@ window.onload = () => {
 async function login() {
     const u = document.getElementById("username").value;
     const p = document.getElementById("password").value;
+    if(!u || !p) return;
     toggleLoading(true);
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "login", username: u, password: p }) });
         const data = await res.json();
         if (data.status === "success") {
-            const sessionData = { time: Date.now(), data: data };
-            localStorage.setItem("biller_session", JSON.stringify(sessionData));
+            localStorage.setItem("biller_session", JSON.stringify({ time: Date.now(), data: data }));
             showMenu(data);
         } else {
-            document.getElementById("errorMsg").innerText = "User atau Password salah!";
+            document.getElementById("errorMsg").innerText = "Gagal: User/Password salah";
         }
-    } catch (e) { alert("Koneksi Gagal"); }
+    } catch (e) { alert("Error: Cek Koneksi/URL GAS"); }
     toggleLoading(false);
 }
 
 function showMenu(data = null) {
     if (data) {
-        document.getElementById("summaryTitle").innerText = "Halo, " + data.USER;
-        document.getElementById("summaryStats").innerHTML = `
-            <div class="summary-item">Total Plg: <b>${data.total_pelanggan}</b></div>
-            <div class="summary-item">Tagihan: <b>Rp ${data.total_tagihan.toLocaleString()}</b></div>
-            <div class="summary-item">1 Lembar: <b>${data.total_lembar_1}</b></div>
-            <div class="summary-item">3+ Lembar: <b>${data.total_lembar_3}</b></div>
-        `;
+        document.getElementById("userTitle").innerText = "👤 " + data.USER;
+        document.getElementById("stats").innerHTML = `
+            <div class="sum-item">Plg: <b>${data.total_pelanggan}</b></div>
+            <div class="sum-item">Tag: <b>Rp${data.total_tagihan.toLocaleString()}</b></div>
+            <div class="sum-item">1 Lbr: <b>${data.total_lembar_1}</b></div>
+            <div class="sum-item">3+ Lbr: <b>${data.total_lembar_3}</b></div>`;
     }
     document.getElementById("loginBox").classList.add("hidden");
     document.getElementById("dataBox").classList.add("hidden");
@@ -114,74 +102,58 @@ function showMenu(data = null) {
 
 async function loadData(action) {
     toggleLoading(true);
-    const user = JSON.parse(localStorage.getItem("biller_session")).data.USER;
+    const session = JSON.parse(localStorage.getItem("biller_session"));
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: action, USER: user }) });
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: action, USER: session.data.USER }) });
         const json = await res.json();
-        allData = json.data;
-        renderList(action);
+        currentViewData = json.data;
+        renderList(action === "getDatung");
         document.getElementById("menuBox").classList.add("hidden");
         document.getElementById("dataBox").classList.remove("hidden");
-    } catch (e) { alert("Gagal ambil data"); }
+    } catch (e) { alert("Gagal memuat data"); }
     toggleLoading(false);
 }
 
-function renderList(type) {
-    const container = document.getElementById("dataList");
+function renderList(isDatung) {
+    const container = document.getElementById("list");
     container.innerHTML = "";
-    allData.forEach((item, index) => {
-        let html = `
-            <div class="modern-card">
-                <span class="name">${item["NAMA PLG"] || item.NAMA}</span>
-                <div class="data-row"><span>IDPEL</span><b>${item.IDPEL}</b></div>
-                <div class="data-row"><span>RBM</span><b>${item.RBM}</b></div>
-                <div class="data-row"><span>TARIF/DAYA</span><b>${item.TARIF}/${item.DAYA}</b></div>
-        `;
-        
-        if (type === "getDatung") {
-            html += `
-                <div class="data-row"><span>TAGIHAN</span><b>Rp ${(item.RPTAGIHAN || 0).toLocaleString()}</b></div>
-                <div class="data-row"><span>LEMBAR</span><b>${item.LEMBAR}</b></div>
-                <div class="ket-box" id="ket-${item.IDPEL}">${item.KETERANGAN || "Tidak ada keterangan"}</div>
-                <button style="padding:5px; font-size:12px; width:auto; margin-right:5px;" onclick="editKet('${item.IDPEL}')">Edit Ket</button>
-            `;
+    currentViewData.forEach(item => {
+        let card = `<div class="modern-card">
+            <b style="color:var(--primary); font-size:15px;">${item["NAMA PLG"] || item.NAMA}</b>
+            <div class="data-row"><span>IDPEL</span><b>${item.IDPEL}</b></div>
+            <div class="data-row"><span>RBM / LGK</span><b>${item.RBM} / ${item.LGK}</b></div>
+            <div class="data-row"><span>TARIF / DAYA</span><b>${item.TARIF} / ${item.DAYA}</b></div>`;
+        if(isDatung) {
+            card += `<div class="data-row"><span>TAGIHAN</span><b>Rp${(item.RPTAGIHAN||0).toLocaleString()}</b></div>
+                     <div class="data-row"><span>LEMBAR</span><b>${item.LEMBAR}</b></div>
+                     <div class="ket-box" id="k-${item.IDPEL}">${item.KETERANGAN || "-"}</div>
+                     <button style="padding:6px; font-size:11px; width:auto;" onclick="editKet('${item.IDPEL}')">EDIT KET</button>`;
         }
-        
-        html += `</div>`;
-        container.innerHTML += html;
+        card += `</div>`;
+        container.innerHTML += card;
     });
 }
 
 async function editKet(idpel) {
-    const newKet = prompt("Masukkan Keterangan Baru:");
-    if (newKet === null) return;
+    const val = prompt("Isi Keterangan:");
+    if (val === null) return;
     toggleLoading(true);
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateKeterangan", idpel: idpel, keterangan: newKet }) });
-    const result = await res.json();
-    if (result.status === "success") {
-        document.getElementById(`ket-${idpel}`).innerText = newKet;
-        alert("Berhasil disimpan ke Sheets!");
-    }
+    try {
+        await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateKeterangan", idpel: idpel, keterangan: val }) });
+        document.getElementById(`k-${idpel}`).innerText = val;
+    } catch (e) { alert("Gagal update"); }
     toggleLoading(false);
 }
 
 function filterLocal() {
-    const keyword = document.getElementById("searchInput").value.toLowerCase();
-    const cards = document.querySelectorAll(".modern-card");
-    cards.forEach(card => {
-        const txt = card.innerText.toLowerCase();
-        card.style.display = txt.includes(keyword) ? "block" : "none";
+    const k = document.getElementById("search").value.toLowerCase();
+    document.querySelectorAll(".modern-card").forEach(c => {
+        c.style.display = c.innerText.toLowerCase().includes(k) ? "block" : "none";
     });
 }
 
-function logout() {
-    localStorage.removeItem("biller_session");
-    location.reload();
-}
-
-function toggleLoading(show) {
-    document.getElementById("loading").classList.toggle("hidden", !show);
-}
+function logout() { localStorage.removeItem("biller_session"); location.reload(); }
+function toggleLoading(s) { document.getElementById("loading").classList.toggle("hidden", !s); }
 </script>
 </body>
 </html>
