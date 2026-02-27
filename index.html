@@ -4,139 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BillerHub</title>
+    <meta name="theme-color" content="#1fa855">
     <link rel="manifest" href="./manifest.json">
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('./sw.js', {scope: './'})
-          .then(function(reg) {
-            console.log('PWA Registered');
-            reg.update(); // Paksa update file
-          })
-          .catch(function(err) {
-            console.log('PWA Failed', err);
-          });
-        });
-      }
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });
+        }
     </script>
-
     <style>
-        :root { --primary: #1fa855; --bg: #f4f7f6; --text: #333; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
-        .header { background: var(--primary); color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; position: sticky; top: 0; z-index: 100; }
+        :root { --primary: #1fa855; --bg: #f4f7f6; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg); }
+        .header { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 100; }
         .container { max-width: 500px; margin: 0 auto; padding: 15px; }
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        input, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 14px; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 8px; }
-        button.sec { background: #666; margin-top: 5px; }
-        .summary-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-        .sum-item { background: #e8f5e9; padding: 10px; border-radius: 8px; font-size: 13px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
-        .modern-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        input, select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .sum-item { background: #f1f8f3; padding: 10px; border-radius: 8px; font-size: 13px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .modern-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid var(--primary); }
         .data-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed #eee; }
-        .ket-box { margin-top: 8px; background: #fffde7; padding: 8px; border-radius: 5px; font-size: 12px; border: 1px solid #ffe082; }
         .hidden { display: none !important; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 2000; font-weight: bold; color: var(--primary); }
-        footer { text-align: center; font-size: 11px; color: #aaa; margin: 20px 0; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 999; }
     </style>
 </head>
 <body>
-
-<div id="loading" class="hidden">⏳ Memuat...</div>
+<div id="loading" class="hidden">⏳ Menghubungkan...</div>
 <div class="header">BillerHub</div>
-
 <div class="container">
     <div id="loginBox" class="card">
-        <h3 style="text-align:center; margin:0 0 15px 0;">Login Petugas</h3>
+        <h3 style="text-align:center">Login Petugas</h3>
         <input type="text" id="username" placeholder="Username">
         <input type="password" id="password" placeholder="Password">
         <button onclick="login()">MASUK</button>
-        <p id="errorMsg" style="color:red; font-size:12px; text-align:center"></p>
     </div>
-
     <div id="menuBox" class="hidden">
         <div class="card">
             <div id="userTitle" style="font-weight:bold; color:var(--primary); margin-bottom:10px;"></div>
-            <div class="summary-grid">
-                <div class="sum-item"><span>Total Plg</span> <b id="s-total">0</b></div>
-                <div class="sum-item"><span>Total Tagihan</span> <b id="s-rp">Rp 0</b></div>
-                <div class="sum-item"><span>1 Lembar</span> <b id="s-l1">0 (Rp 0)</b></div>
-                <div class="sum-item"><span>2 Lembar</span> <b id="s-l2">0 (Rp 0)</b></div>
-                <div class="sum-item"><span>3+ Lembar</span> <b id="s-l3">0 (Rp 0)</b></div>
-            </div>
+            <div id="stats"></div>
             <button onclick="loadData('getDatung')">📊 DATA DATUNG</button>
             <button onclick="loadData('getRBM')">🚶 RUTE BACA METER</button>
-            <button class="sec" onclick="logout()">KELUAR</button>
+            <button style="background:#666" onclick="logout()">KELUAR</button>
         </div>
     </div>
-
     <div id="dataBox" class="hidden">
-        <button class="sec" onclick="backToMenu()">← KEMBALI</button>
+        <button style="background:#666" onclick="backToMenu()">← KEMBALI</button>
         <div class="card" style="margin-top:10px;">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-                <select id="sortCol" onchange="applyFilter()"><option value="NAMA PLG">Urut: Nama</option><option value="RPTAGIHAN">Urut: Tagihan</option></select>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
+                <select id="sortCol" onchange="applyFilter()"><option value="NAMA PLG">Nama</option><option value="RPTAGIHAN">Tagihan</option></select>
                 <select id="sortDir" onchange="applyFilter()"><option value="asc">A-Z</option><option value="desc">Z-A</option></select>
             </div>
-            <div id="dynamicFilters" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;"></div>
-            <input type="text" id="search" placeholder="Cari..." onkeyup="applyFilter()" style="margin-top:10px;">
+            <div id="dynamicFilters" style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:5px;"></div>
+            <input type="text" id="search" placeholder="Cari..." onkeyup="applyFilter()">
         </div>
         <div id="list"></div>
     </div>
-    
-    <footer>&copy; 2026 BillerHub - By Mas Admin</footer>
 </div>
-
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxZ65rbnJLWiQ2xNYWRF2HapRTkrnDZ_lk8Ceon1OnLe-eAS0peDRQpSJ6328jgsbY/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyNVQGjA5b0C3tJtvm0S4N1OlOAWflJ8Dvf6aGoBLUcO8i6jWawC-VyB8RsIG0EiD8/exec";
 let rawData = [], isDatung = false;
 
 document.addEventListener("DOMContentLoaded", () => {
-    const sessionStr = localStorage.getItem("biller_session");
-    if (sessionStr) {
-        const session = JSON.parse(sessionStr);
-        if (Date.now() - session.time < 43200000) renderMenu(session.data);
-    }
+    const session = JSON.parse(localStorage.getItem("biller_session"));
+    if (session && (Date.now() - session.time < 43200000)) renderMenu(session.data);
 });
 
 async function login() {
-    const u = document.getElementById("username").value;
-    const p = document.getElementById("password").value;
-    if(!u || !p) { alert("Username dan Password harus diisi!"); return; }
-    
+    const u = document.getElementById("username").value, p = document.getElementById("password").value;
+    if(!u || !p) return alert("Isi Username/Password!");
     setLoading(true);
-    console.log("Mencoba login ke:", API_URL); // Cek URL di konsol
-
     try {
-        const res = await fetch(API_URL, { 
-            method: "POST", 
-            body: JSON.stringify({ action: "login", username: u, password: p }) 
-        });
-        
-        if (!res.ok) throw new Error("Respon server tidak oke: " + res.status);
-
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "login", username: u, password: p }) });
         const data = await res.json();
-        console.log("Respon diterima:", data);
-
         if (data.status === "success") {
             localStorage.setItem("biller_session", JSON.stringify({ time: Date.now(), data: data }));
             renderMenu(data);
-        } else { 
-            alert("Login Gagal: Username atau Password salah!"); 
-        }
-    } catch (e) { 
-        console.error("Error Detail:", e);
-        alert("Gagal koneksi ke server! Periksa URL Apps Script Anda."); 
-    } finally {
-        setLoading(false);
-    }
+        } else alert("Login Gagal: User/Password salah!");
+    } catch (e) { alert("Error: Cek Koneksi / URL Apps Script"); }
+    setLoading(false);
 }
 
 function renderMenu(d) {
     document.getElementById("userTitle").innerText = "👤 " + d.USER;
-    document.getElementById("s-total").innerText = d.total_pelanggan;
-    document.getElementById("s-rp").innerText = "Rp " + d.total_tagihan.toLocaleString();
-    document.getElementById("s-l1").innerText = `${d.lbr1.qty} (Rp ${d.lbr1.rp.toLocaleString()})`;
-    document.getElementById("s-l2").innerText = `${d.lbr2.qty} (Rp ${d.lbr2.rp.toLocaleString()})`;
-    document.getElementById("s-l3").innerText = `${d.lbr3.qty} (Rp ${d.lbr3.rp.toLocaleString()})`;
+    document.getElementById("stats").innerHTML = `
+        <div class="sum-item"><span>Total Plg</span> <b>${d.total_pelanggan}</b></div>
+        <div class="sum-item"><span>Total Tagihan</span> <b>Rp${d.total_tagihan.toLocaleString()}</b></div>
+        <div class="sum-item"><span>1 Lembar</span> <b>${d.lbr1.qty} (Rp${d.lbr1.rp.toLocaleString()})</b></div>
+        <div class="sum-item"><span>2 Lembar</span> <b>${d.lbr2.qty} (Rp${d.lbr2.rp.toLocaleString()})</b></div>
+        <div class="sum-item"><span>3+ Lembar</span> <b>${d.lbr3.qty} (Rp${d.lbr3.rp.toLocaleString()})</b></div>`;
     document.getElementById("loginBox").classList.add("hidden");
     document.getElementById("menuBox").classList.remove("hidden");
     document.getElementById("dataBox").classList.add("hidden");
@@ -144,15 +97,14 @@ function renderMenu(d) {
 
 async function loadData(action) {
     setLoading(true); isDatung = (action === "getDatung");
-    const session = JSON.parse(localStorage.getItem("biller_session"));
+    const user = JSON.parse(localStorage.getItem("biller_session")).data.USER;
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action, USER: session.data.USER }) });
-        const json = await res.json();
-        rawData = json.data;
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action, USER: user }) });
+        const json = await res.json(); rawData = json.data;
         generateFilters(); applyFilter();
         document.getElementById("menuBox").classList.add("hidden");
         document.getElementById("dataBox").classList.remove("hidden");
-    } catch (e) { alert("Gagal memuat data"); }
+    } catch (e) { alert("Gagal muat data!"); }
     setLoading(false);
 }
 
@@ -160,4 +112,52 @@ function generateFilters() {
     const container = document.getElementById("dynamicFilters"); container.innerHTML = "";
     const cols = isDatung ? ["RBM", "LEMBAR", "TARIF", "DAYA"] : ["RBM"];
     cols.forEach(col => {
-        const vals = [...new Set
+        const vals = [...new Set(rawData.map(i => String(i[col] || "")))].filter(v => v).sort();
+        let h = `<select id="f-${col}" onchange="applyFilter()"><option value="">Semua ${col}</option>`;
+        vals.forEach(v => h += `<option value="${v}">${v}</option>`);
+        container.innerHTML += h + `</select>`;
+    });
+}
+
+function applyFilter() {
+    let f = [...rawData]; const s = document.getElementById("search").value.toLowerCase();
+    if(s) f = f.filter(i => JSON.stringify(i).toLowerCase().includes(s));
+    const cols = isDatung ? ["RBM", "LEMBAR", "TARIF", "DAYA"] : ["RBM"];
+    cols.forEach(col => { const v = document.getElementById(`f-${col}`).value; if(v) f = f.filter(i => String(i[col]) === v); });
+    const c = document.getElementById("sortCol").value, d = document.getElementById("sortDir").value;
+    f.sort((x, y) => {
+        let vX = x[c] || x.NAMA || "", vY = y[c] || y.NAMA || "";
+        return d === "asc" ? (vX > vY ? 1 : -1) : (vX < vY ? 1 : -1);
+    });
+    renderList(f);
+}
+
+function renderList(data) {
+    const container = document.getElementById("list"); container.innerHTML = "";
+    data.forEach(i => {
+        let h = `<div class="modern-card"><b style="color:var(--primary)">${i["NAMA PLG"] || i.NAMA}</b>
+            <div class="data-row"><span>IDPEL</span><b>${i.IDPEL}</b></div>
+            <div class="data-row"><span>RBM/LGK</span><b>${i.RBM}/${i.LGK}</b></div>
+            <div class="data-row"><span>TARIF/DAYA</span><b>${i.TARIF}/${i.DAYA}</b></div>`;
+        if(isDatung) h += `<div class="data-row"><span>TAGIHAN/LBR</span><b>Rp${(i.RPTAGIHAN||0).toLocaleString()} (${i.LEMBAR})</b></div>
+            <div style="margin-top:8px; background:#fffde7; padding:8px; border-radius:5px; font-size:12px;" id="k-${i.IDPEL}">${i.KETERANGAN || "-"}</div>
+            <button style="padding:5px;width:auto;font-size:11px;" onclick="editKet('${i.IDPEL}')">EDIT KET</button>`;
+        container.innerHTML += h + `</div>`;
+    });
+}
+
+async function editKet(id) {
+    const v = prompt("Isi Keterangan:"); if(v===null) return;
+    setLoading(true);
+    try {
+        await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateKeterangan", idpel: id, keterangan: v }) });
+        document.getElementById(`k-${id}`).innerText = v;
+    } catch(e) { alert("Gagal update!"); }
+    setLoading(false);
+}
+function backToMenu() { document.getElementById("dataBox").classList.add("hidden"); document.getElementById("menuBox").classList.remove("hidden"); }
+function logout() { localStorage.removeItem("biller_session"); location.reload(); }
+function setLoading(s) { document.getElementById("loading").classList.toggle("hidden", !s); }
+</script>
+</body>
+</html>
