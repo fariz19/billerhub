@@ -3,7 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BillerHub Pro</title>
+    <title>BillerHub</title>
+    <meta name="theme-color" content="#1fa855">
+    
+    <link rel="manifest" href="manifest.json">
+    
+    <script>
+      // Mendaftarkan Service Worker agar bisa di-install
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Service Worker Terdaftar!'))
+            .catch(err => console.log('Gagal Daftar SW', err));
+        });
+      }
+    </script>
+
     <style>
         :root { --primary: #1fa855; --bg: #f4f7f6; --text: #333; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
@@ -13,15 +28,10 @@
         input, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 14px; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 8px; }
         button.sec { background: #666; margin-top: 5px; }
-        
-        /* Summary Dashboard */
         .summary-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-        .sum-item { background: #e8f5e9; padding: 10px; border-radius: 8px; font-size: 13px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; }
-        
-        /* Filter Panel */
+        .sum-item { background: #e8f5e9; padding: 10px; border-radius: 8px; font-size: 13px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
         .filter-panel { background: #fff; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; }
         .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        
         .modern-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .data-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed #eee; }
         .ket-box { margin-top: 8px; background: #fffde7; padding: 8px; border-radius: 5px; font-size: 12px; border: 1px solid #ffe082; }
@@ -32,7 +42,7 @@
 </head>
 <body>
 
-<div id="loading" class="hidden">⏳ Memuat...</div>
+<div id="loading" class="hidden">⏳ Memuat Data...</div>
 <div class="header">BillerHub</div>
 
 <div class="container">
@@ -48,7 +58,7 @@
         <div class="card">
             <div id="userTitle" style="font-weight:bold; color:var(--primary); margin-bottom:10px;"></div>
             <div class="summary-grid">
-                <div class="sum-item"><span>Total Pelanggan</span> <b id="s-total">0</b></div>
+                <div class="sum-item"><span>Total Plg</span> <b id="s-total">0</b></div>
                 <div class="sum-item"><span>Total Tagihan</span> <b id="s-rp">Rp 0</b></div>
                 <div class="sum-item"><span>1 Lembar</span> <b id="s-l1">0 (Rp 0)</b></div>
                 <div class="sum-item"><span>2 Lembar</span> <b id="s-l2">0 (Rp 0)</b></div>
@@ -62,7 +72,6 @@
 
     <div id="dataBox" class="hidden">
         <button class="sec" onclick="backToMenu()">← KEMBALI</button>
-        
         <div class="filter-panel">
             <div class="filter-row">
                 <select id="sortCol" onchange="applyFilter()">
@@ -75,10 +84,9 @@
                     <option value="desc">Z-A (Besar-Kecil)</option>
                 </select>
             </div>
-            <div id="dynamicFilters" class="filter-row"></div>
-            <input type="text" id="search" placeholder="Cari Nama/IDPEL..." onkeyup="applyFilter()">
+            <div id="dynamicFilters" class="filter-row" style="margin-top:5px;"></div>
+            <input type="text" id="search" placeholder="Cari Nama/IDPEL..." onkeyup="applyFilter()" style="margin-top:10px;">
         </div>
-
         <div id="list"></div>
     </div>
     
@@ -86,13 +94,17 @@
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbw1SW_t7y0ixmufuk1HpWmGDWW9jPBZJzhmd4cxl3I9pUC4TlBm1NEpwPo9QmddcIR5/exec";
+// MASUKKAN URL HASIL DEPLOY TERBARU ANDA DISINI
+const API_URL = "https://script.google.com/macros/s/AKfycbwK-88S9YJIXHlBQvPTWt7_0V9pOib0BNb3aQNIuKMDkYYeV4uCD-1OMn8-Scnie6Iy/exec";
 let rawData = [];
 let isDatungMode = false;
 
 document.addEventListener("DOMContentLoaded", () => {
-    const session = JSON.parse(localStorage.getItem("biller_session"));
-    if (session && (Date.now() - session.time < 43200000)) renderMenu(session.data);
+    const sessionStr = localStorage.getItem("biller_session");
+    if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (Date.now() - session.time < 43200000) renderMenu(session.data);
+    }
 });
 
 async function login() {
@@ -107,7 +119,7 @@ async function login() {
             localStorage.setItem("biller_session", JSON.stringify({ time: Date.now(), data: data }));
             renderMenu(data);
         } else { alert("Login Gagal!"); }
-    } catch (e) { alert("Error Server"); }
+    } catch (e) { alert("Error Server!"); }
     setLoading(false);
 }
 
@@ -135,7 +147,7 @@ async function loadData(action) {
         applyFilter();
         document.getElementById("menuBox").classList.add("hidden");
         document.getElementById("dataBox").classList.remove("hidden");
-    } catch (e) { alert("Gagal Load"); }
+    } catch (e) { alert("Gagal Load!"); }
     setLoading(false);
 }
 
@@ -143,9 +155,8 @@ function generateFilterUI() {
     const container = document.getElementById("dynamicFilters");
     container.innerHTML = "";
     const cols = isDatungMode ? ["RBM", "LEMBAR", "TARIF", "DAYA"] : ["RBM"];
-    
     cols.forEach(col => {
-        const uniqueVals = [...new Set(rawData.map(item => item[col] || item["NAMA PLG" === col ? "NAMA" : col]))].sort();
+        const uniqueVals = [...new Set(rawData.map(item => String(item[col] || (col === "NAMA PLG" ? item.NAMA : ""))))].filter(v => v !== "").sort();
         let html = `<select id="filter-${col}" onchange="applyFilter()"><option value="">Semua ${col}</option>`;
         uniqueVals.forEach(v => html += `<option value="${v}">${v}</option>`);
         html += `</select>`;
@@ -156,39 +167,31 @@ function generateFilterUI() {
 function applyFilter() {
     let filtered = [...rawData];
     const search = document.getElementById("search").value.toLowerCase();
-    
-    // Filter Search
     if(search) filtered = filtered.filter(i => JSON.stringify(i).toLowerCase().includes(search));
-
-    // Filter Dropdowns
     const cols = isDatungMode ? ["RBM", "LEMBAR", "TARIF", "DAYA"] : ["RBM"];
     cols.forEach(col => {
         const val = document.getElementById(`filter-${col}`).value;
         if(val) filtered = filtered.filter(i => String(i[col]) === val);
     });
-
-    // Sort
     const sCol = document.getElementById("sortCol").value;
     const sDir = document.getElementById("sortDir").value;
     filtered.sort((a, b) => {
-        let valA = a[sCol] || 0, valB = b[sCol] || 0;
-        if(sCol === "NAMA PLG" && !isDatungMode) { valA = a.NAMA; valB = b.NAMA; }
+        let valA = a[sCol] || (sCol === "NAMA PLG" ? a.NAMA : 0);
+        let valB = b[sCol] || (sCol === "NAMA PLG" ? b.NAMA : 0);
         return sDir === "asc" ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
     });
-
     renderList(filtered);
 }
 
 function renderList(data) {
     const container = document.getElementById("list");
-    container.innerHTML = data.length ? "" : "<div style='text-align:center;padding:20px;'>Data tidak ditemukan</div>";
+    container.innerHTML = data.length ? "" : "<div style='text-align:center;padding:20px;'>Tidak ada data</div>";
     data.forEach(item => {
         let card = `<div class="modern-card">
             <b style="color:var(--primary);">${item["NAMA PLG"] || item.NAMA}</b>
             <div class="data-row"><span>IDPEL</span><b>${item.IDPEL}</b></div>
             <div class="data-row"><span>TARIF / DAYA</span><b>${item.TARIF} / ${item.DAYA}</b></div>
             <div class="data-row"><span>RBM / LGK</span><b>${item.RBM} / ${item.LGK}</b></div>`;
-        
         if(isDatungMode) {
             card += `<div class="data-row"><span>TAGIHAN / LBR</span><b>Rp${(item.RPTAGIHAN||0).toLocaleString()} (${item.LEMBAR})</b></div>
                      <div class="ket-box" id="k-${item.IDPEL}">${item.KETERANGAN || "-"}</div>
@@ -200,7 +203,7 @@ function renderList(data) {
 }
 
 async function editKet(id) {
-    const val = prompt("Masukkan Keterangan:");
+    const val = prompt("Masukkan Keterangan Baru:");
     if(val === null) return;
     setLoading(true);
     await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateKeterangan", idpel: id, keterangan: val }) });
