@@ -86,7 +86,7 @@
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzcYR0aIpqo232Wz79z7Rq7CcFkkBNJfkaIYxGmc381Btz_U7X9w-Mf8OcR00_r8JPx/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxZ65rbnJLWiQ2xNYWRF2HapRTkrnDZ_lk8Ceon1OnLe-eAS0peDRQpSJ6328jgsbY/exec";
 let rawData = [], isDatung = false;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -98,18 +98,36 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function login() {
-    const u = document.getElementById("username").value, p = document.getElementById("password").value;
-    if(!u || !p) return;
+    const u = document.getElementById("username").value;
+    const p = document.getElementById("password").value;
+    if(!u || !p) { alert("Username dan Password harus diisi!"); return; }
+    
     setLoading(true);
+    console.log("Mencoba login ke:", API_URL); // Cek URL di konsol
+
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "login", username: u, password: p }) });
+        const res = await fetch(API_URL, { 
+            method: "POST", 
+            body: JSON.stringify({ action: "login", username: u, password: p }) 
+        });
+        
+        if (!res.ok) throw new Error("Respon server tidak oke: " + res.status);
+
         const data = await res.json();
+        console.log("Respon diterima:", data);
+
         if (data.status === "success") {
             localStorage.setItem("biller_session", JSON.stringify({ time: Date.now(), data: data }));
             renderMenu(data);
-        } else { alert("User/Password Salah!"); }
-    } catch (e) { alert("Error Koneksi Server"); }
-    setLoading(false);
+        } else { 
+            alert("Login Gagal: Username atau Password salah!"); 
+        }
+    } catch (e) { 
+        console.error("Error Detail:", e);
+        alert("Gagal koneksi ke server! Periksa URL Apps Script Anda."); 
+    } finally {
+        setLoading(false);
+    }
 }
 
 function renderMenu(d) {
