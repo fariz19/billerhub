@@ -4,19 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BillerHub</title>
-    <meta name="theme-color" content="#1fa855">
-    
-    <link rel="manifest" href="manifest.json">
-    
+    <link rel="manifest" href="./manifest.json">
     <script>
-        // Mendaftarkan Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('Service Worker Active'))
-                .catch(err => console.log('Service Worker Error', err));
-            });
-        }
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('./sw.js', {scope: './'})
+          .then(function(reg) {
+            console.log('PWA Registered');
+            reg.update(); // Paksa update file
+          })
+          .catch(function(err) {
+            console.log('PWA Failed', err);
+          });
+        });
+      }
     </script>
 
     <style>
