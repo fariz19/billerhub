@@ -9,26 +9,26 @@
     <link rel="manifest" href="manifest.json">
     
     <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js', { scope: './' })
-        .then(reg => {
-          console.log('SW terdaftar di scope:', reg.scope);
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js', { scope: './' })
+            .then(reg => {
+              console.log('SW terdaftar di scope:', reg.scope);
           // Paksa update jika ada perubahan kode
-          reg.update();
-        })
-        .catch(err => console.error('SW Gagal:', err));
-    });
+                 reg.update();
+            })
+            .catch(err => console.error('SW Gagal:', err));
+        });
     
     // Refresh otomatis jika Service Worker baru sudah siap
-    let refreshing;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      window.location.reload();
-      refreshing = true;
-    });
-  }
-</script>
+        let refreshing;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          window.location.reload();
+          refreshing = true;
+        });
+      }
+    </script>
 
     <style>
         :root { --primary: #1fa855; --bg: #f4f7f6; --text: #333; }
