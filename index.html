@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BillerHub Pro</title>
-    <meta name="theme-color" content="#1fa855">
     <style>
         :root { --primary: #1fa855; --bg: #f4f7f6; --text: #333; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
@@ -13,13 +12,14 @@
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 14px; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         button.sec { background: #666; margin-top: 5px; }
         .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .sum-item { background: #e8f5e9; padding: 10px; border-radius: 8px; font-size: 12px; border-left: 4px solid var(--primary); }
         .modern-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 12px; border-left: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .data-row { display: flex; justify-content: space-between; font-size: 14px; padding: 3px 0; border-bottom: 1px dashed #eee; }
         .ket-box { margin-top: 8px; background: #fffde7; padding: 8px; border-radius: 5px; font-size: 12px; color: #555; border: 1px solid #ffe082; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; font-weight: bold; color: var(--primary); }
         footer { text-align: center; font-size: 11px; color: #aaa; margin: 20px 0; }
     </style>
@@ -34,7 +34,7 @@
         <h3 style="text-align:center; margin-top:0;">Login Petugas</h3>
         <input type="text" id="username" placeholder="Username">
         <input type="password" id="password" placeholder="Password">
-        <button onclick="login()">MASUK</button>
+        <button id="btnMasuk" onclick="login()">MASUK</button>
         <p id="errorMsg" style="color:red; font-size:13px; text-align:center"></p>
     </div>
 
@@ -49,7 +49,7 @@
     </div>
 
     <div id="dataBox" class="hidden">
-        <button class="sec" onclick="showMenu()">← KEMBALI</button>
+        <button class="sec" onclick="backToMenu()">← KEMBALI</button>
         <input type="text" id="search" placeholder="Cari Nama / IDPEL..." onkeyup="filterLocal()">
         <div id="list"></div>
     </div>
@@ -58,91 +58,109 @@
 </div>
 
 <script>
+// MASUKKAN URL BARU ANDA DISINI
 const API_URL = "https://script.google.com/macros/s/AKfycbzFS6kAZIbATnm1_UA0BV9eGZzu-VwOsp8lNtcISnp7ZeahSrPrmSY85jL16Bh26k3I/exec";
-let currentViewData = [];
 
-window.onload = () => {
-    const session = JSON.parse(localStorage.getItem("biller_session"));
-    if (session && (Date.now() - session.time < 12 * 60 * 60 * 1000)) {
-        showMenu(session.data);
+// Inisialisasi Aplikasi
+document.addEventListener("DOMContentLoaded", () => {
+    const sessionStr = localStorage.getItem("biller_session");
+    if (sessionStr) {
+        try {
+            const session = JSON.parse(sessionStr);
+            const expired = (Date.now() - session.time) > (12 * 60 * 60 * 1000);
+            if (!expired && session.data) {
+                renderMenu(session.data);
+            } else {
+                localStorage.removeItem("biller_session");
+            }
+        } catch(e) { 
+            localStorage.removeItem("biller_session");
+        }
     }
-};
+});
 
 async function login() {
     const u = document.getElementById("username").value;
     const p = document.getElementById("password").value;
-    if(!u || !p) return;
-    toggleLoading(true);
+    if(!u || !p) { alert("Isi Username & Password!"); return; }
+    
+    setLoading(true);
+    document.getElementById("errorMsg").innerText = "";
+
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "login", username: u, password: p }) });
+        const res = await fetch(API_URL, { 
+            method: "POST", 
+            body: JSON.stringify({ action: "login", username: u, password: p }) 
+        });
         const data = await res.json();
+        
         if (data.status === "success") {
             localStorage.setItem("biller_session", JSON.stringify({ time: Date.now(), data: data }));
-            showMenu(data);
+            renderMenu(data);
         } else {
-            document.getElementById("errorMsg").innerText = "Gagal: User/Password salah";
+            document.getElementById("errorMsg").innerText = "User atau Password salah!";
         }
-    } catch (e) { alert("Error: Cek Koneksi/URL GAS"); }
-    toggleLoading(false);
+    } catch (e) { 
+        alert("Gagal koneksi ke server. Pastikan URL Script benar.");
+    } finally {
+        setLoading(false);
+    }
 }
 
-function showMenu(data = null) {
-    if (data) {
-        document.getElementById("userTitle").innerText = "👤 " + data.USER;
-        document.getElementById("stats").innerHTML = `
-            <div class="sum-item">Plg: <b>${data.total_pelanggan}</b></div>
-            <div class="sum-item">Tag: <b>Rp${data.total_tagihan.toLocaleString()}</b></div>
-            <div class="sum-item">1 Lbr: <b>${data.total_lembar_1}</b></div>
-            <div class="sum-item">3+ Lbr: <b>${data.total_lembar_3}</b></div>`;
-    }
+function renderMenu(data) {
+    document.getElementById("userTitle").innerText = "👤 " + data.USER;
+    document.getElementById("stats").innerHTML = `
+        <div class="sum-item">Plg: <b>${data.total_pelanggan || 0}</b></div>
+        <div class="sum-item">Tag: <b>Rp${(data.total_tagihan || 0).toLocaleString()}</b></div>
+        <div class="sum-item">1 Lbr: <b>${data.total_lembar_1 || 0}</b></div>
+        <div class="sum-item">3+ Lbr: <b>${data.total_lembar_3 || 0}</b></div>`;
+    
     document.getElementById("loginBox").classList.add("hidden");
     document.getElementById("dataBox").classList.add("hidden");
     document.getElementById("menuBox").classList.remove("hidden");
 }
 
 async function loadData(action) {
-    toggleLoading(true);
+    setLoading(true);
     const session = JSON.parse(localStorage.getItem("biller_session"));
     try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: action, USER: session.data.USER }) });
         const json = await res.json();
-        currentViewData = json.data;
-        renderList(action === "getDatung");
+        
+        const container = document.getElementById("list");
+        container.innerHTML = "";
+        
+        json.data.forEach(item => {
+            let card = `<div class="modern-card">
+                <b style="color:var(--primary); font-size:15px;">${item["NAMA PLG"] || item.NAMA}</b>
+                <div class="data-row"><span>IDPEL</span><b>${item.IDPEL}</b></div>
+                <div class="data-row"><span>RBM / LGK</span><b>${item.RBM} / ${item.LGK}</b></div>`;
+            
+            if(action === "getDatung") {
+                card += `<div class="data-row"><span>TAGIHAN</span><b>Rp${(item.RPTAGIHAN||0).toLocaleString()}</b></div>
+                         <div class="data-row"><span>LEMBAR</span><b>${item.LEMBAR}</b></div>
+                         <div class="ket-box" id="k-${item.IDPEL}">${item.KETERANGAN || "-"}</div>
+                         <button style="padding:6px; font-size:11px; width:auto;" onclick="editKet('${item.IDPEL}')">EDIT KET</button>`;
+            }
+            card += `</div>`;
+            container.innerHTML += card;
+        });
+
         document.getElementById("menuBox").classList.add("hidden");
         document.getElementById("dataBox").classList.remove("hidden");
-    } catch (e) { alert("Gagal memuat data"); }
-    toggleLoading(false);
-}
-
-function renderList(isDatung) {
-    const container = document.getElementById("list");
-    container.innerHTML = "";
-    currentViewData.forEach(item => {
-        let card = `<div class="modern-card">
-            <b style="color:var(--primary); font-size:15px;">${item["NAMA PLG"] || item.NAMA}</b>
-            <div class="data-row"><span>IDPEL</span><b>${item.IDPEL}</b></div>
-            <div class="data-row"><span>RBM / LGK</span><b>${item.RBM} / ${item.LGK}</b></div>
-            <div class="data-row"><span>TARIF / DAYA</span><b>${item.TARIF} / ${item.DAYA}</b></div>`;
-        if(isDatung) {
-            card += `<div class="data-row"><span>TAGIHAN</span><b>Rp${(item.RPTAGIHAN||0).toLocaleString()}</b></div>
-                     <div class="data-row"><span>LEMBAR</span><b>${item.LEMBAR}</b></div>
-                     <div class="ket-box" id="k-${item.IDPEL}">${item.KETERANGAN || "-"}</div>
-                     <button style="padding:6px; font-size:11px; width:auto;" onclick="editKet('${item.IDPEL}')">EDIT KET</button>`;
-        }
-        card += `</div>`;
-        container.innerHTML += card;
-    });
+    } catch (e) { alert("Gagal memuat daftar data."); }
+    finally { setLoading(false); }
 }
 
 async function editKet(idpel) {
     const val = prompt("Isi Keterangan:");
     if (val === null) return;
-    toggleLoading(true);
+    setLoading(true);
     try {
         await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateKeterangan", idpel: idpel, keterangan: val }) });
         document.getElementById(`k-${idpel}`).innerText = val;
     } catch (e) { alert("Gagal update"); }
-    toggleLoading(false);
+    finally { setLoading(false); }
 }
 
 function filterLocal() {
@@ -152,8 +170,20 @@ function filterLocal() {
     });
 }
 
-function logout() { localStorage.removeItem("biller_session"); location.reload(); }
-function toggleLoading(s) { document.getElementById("loading").classList.toggle("hidden", !s); }
+function backToMenu() {
+    document.getElementById("dataBox").classList.add("hidden");
+    document.getElementById("menuBox").classList.remove("hidden");
+}
+
+function logout() { 
+    localStorage.removeItem("biller_session"); 
+    location.reload(); 
+}
+
+function setLoading(s) { 
+    if(s) document.getElementById("loading").classList.remove("hidden");
+    else document.getElementById("loading").classList.add("hidden");
+}
 </script>
 </body>
 </html>
