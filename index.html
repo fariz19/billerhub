@@ -13,11 +13,11 @@
     </script>
     <style>
         :root { --primary: #1fa855; --bg: #f4f7f6; --text: #333; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
-        .header { background: var(--primary); color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; position: sticky; top: 0; z-index: 100; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+        .header { background: var(--primary); color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .container { max-width: 500px; margin: 0 auto; padding: 15px; }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        input, select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 14px; }
         button { width: 100%; padding: 14px; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button.sec { background: #666; }
         .sum-item { background: #e8f5e9; padding: 10px; border-radius: 8px; font-size: 13px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; margin-bottom: 6px; }
@@ -68,13 +68,30 @@
 </div>
 
 <script>
-// PENTING: Ganti URL dibawah ini dengan URL Web App Apps Script anda yang baru
 const API_URL = "https://script.google.com/macros/s/AKfycbxpbjg82X-Mmn7WVifQYEOWF00F0_qq8wDC1klCIZPB3wp65AmXnZxC3ExxGMco7Fa1/exec";
 let rawData = [], isDatung = false;
 
+// MANAJEMEN TOMBOL KEMBALI HP
+window.addEventListener('popstate', function(event) {
+    const dataBoxVisible = !document.getElementById('dataBox').classList.contains('hidden');
+    const menuBoxVisible = !document.getElementById('menuBox').classList.contains('hidden');
+
+    if (dataBoxVisible) {
+        // Jika sedang di daftar data, kembali ke menu utama
+        backToMenu();
+    } else if (menuBoxVisible) {
+        // Jika sudah di menu utama, jangan biarkan kembali (stay di app)
+        history.pushState(null, null, window.location.pathname);
+    }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
     const session = JSON.parse(localStorage.getItem("biller_session"));
-    if (session && (Date.now() - session.time < 43200000)) renderMenu(session.data);
+    if (session && (Date.now() - session.time < 43200000)) {
+        renderMenu(session.data);
+    }
+    // Set state awal history
+    history.pushState(null, null, window.location.pathname);
 });
 
 async function login() {
@@ -84,22 +101,13 @@ async function login() {
     
     setLoading(true);
     try {
-        const res = await fetch(API_URL, { 
-            method: "POST", 
-            body: JSON.stringify({ action: "login", username: u, password: p }) 
-        });
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "login", username: u, password: p }) });
         const data = await res.json();
-        
         if (data.status === "success") {
             localStorage.setItem("biller_session", JSON.stringify({ time: Date.now(), data: data }));
             renderMenu(data);
-        } else {
-            alert("Login Gagal: User atau Password tidak sesuai.");
-        }
-    } catch (e) { 
-        alert("Error: Gagal terhubung ke server. Pastikan URL Apps Script benar dan status Deployment adalah 'Anyone'.");
-        console.error(e);
-    }
+        } else { alert("Login Gagal!"); }
+    } catch (e) { alert("Error Koneksi Server"); }
     setLoading(false);
 }
 
@@ -122,10 +130,7 @@ async function loadData(action) {
     isDatung = (action === "getDatung");
     const session = JSON.parse(localStorage.getItem("biller_session"));
     try {
-        const res = await fetch(API_URL, { 
-            method: "POST", 
-            body: JSON.stringify({ action: action, USER: session.data.USER }) 
-        });
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: action, USER: session.data.USER }) });
         const json = await res.json();
         rawData = json.data;
         generateFilters(); 
@@ -133,9 +138,9 @@ async function loadData(action) {
         
         document.getElementById("menuBox").classList.add("hidden");
         document.getElementById("dataBox").classList.remove("hidden");
-    } catch (e) { 
-        alert("Gagal memuat data. Periksa koneksi internet anda."); 
-    }
+        // Tambah history agar tombol kembali HP berfungsi
+        history.pushState({view: 'data'}, null, "");
+    } catch (e) { alert("Gagal memuat data."); }
     setLoading(false);
 }
 
@@ -182,7 +187,7 @@ function renderList(data) {
         if(isDatung) {
             h += `<div class="data-row"><span>TAGIHAN / LBR</span><b>Rp${(i.RPTAGIHAN||0).toLocaleString()} (${i.LEMBAR})</b></div>
                 <div style="margin-top:8px; background:#fffde7; padding:8px; border-radius:5px; font-size:12px;" id="k-${i.IDPEL}">${i.KETERANGAN || "-"}</div>
-                <button style="padding:6px; font-size:12px; width:auto;" onclick="editKet('${i.IDPEL}')">EDIT KETERANGAN</button>`;
+                <button style="padding:6px; font-size:12px; width:auto;" onclick="editKet('${i.IDPEL}')">EDIT KET</button>`;
         }
         h += `</div>`;
         container.innerHTML += h;
@@ -190,24 +195,20 @@ function renderList(data) {
 }
 
 async function editKet(id) {
-    const v = prompt("Masukkan Keterangan Baru:"); 
+    const v = prompt("Keterangan Baru:"); 
     if(v === null) return;
     setLoading(true);
     try {
-        const res = await fetch(API_URL, { 
-            method: "POST", 
-            body: JSON.stringify({ action: "updateKeterangan", idpel: id, keterangan: v }) 
-        });
+        await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateKeterangan", idpel: id, keterangan: v }) });
         document.getElementById(`k-${id}`).innerText = v;
-    } catch(e) { 
-        alert("Gagal memperbarui keterangan."); 
-    }
+    } catch(e) { alert("Gagal!"); }
     setLoading(false);
 }
 
 function backToMenu() { 
     document.getElementById("dataBox").classList.add("hidden"); 
     document.getElementById("menuBox").classList.remove("hidden"); 
+    // Jangan pushState di sini agar tombol kembali HP sinkron
 }
 
 function logout() { 
